@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
-import 'package:my_test_app/pages/form.dart'; 
+import 'package:flutter_tesseract_ocr/flutter_tesseract_ocr.dart';
+import 'package:gocheck/pages/form.dart';
+import 'package:gocheck/services/firestore_service.dart';
 
 class ScanPage extends StatefulWidget {
   @override
@@ -46,17 +48,35 @@ class _ScanPageState extends State<ScanPage> {
     }
   }
 
-  // Validate License Plate using OCR or any other logic
+  // Validate License Plate using OCR
   Future<void> _validateLicensePlate(String imagePath) async {
-    // Simulate a license plate validation (e.g., using OCR)
-    bool isValid = true;  // Replace with your actual validation logic
-    if (isValid) {
-      _showValidationDialog(true);
-    } 
+    try {
+      // Extract text from image using OCR
+      String extractedText = await FlutterTesseractOcr.extractText(imagePath);
+
+      // Parse license plate (simple regex for Indonesian plates like B1234ABC)
+      RegExp plateRegex = RegExp(r'\b[A-Z]\d{4}[A-Z]{3}\b');
+      Match? match = plateRegex.firstMatch(extractedText.toUpperCase());
+      if (match != null) {
+        String plate = match.group(0)!;
+        // Check if scooter exists and is in use
+        final scooter = await FirestoreService().getScooterByPlate(plate);
+        if (scooter != null && scooter.status == 'In Use') {
+          _showValidationDialog(true, scooter.id);
+        } else {
+          _showValidationDialog(false);
+        }
+      } else {
+        _showValidationDialog(false);
+      }
+    } catch (e) {
+      print('OCR Error: $e');
+      _showValidationDialog(false);
+    }
   }
 
   // Show validation result
-  void _showValidationDialog(bool isValid) {
+  void _showValidationDialog(bool isValid, [String? scooterId]) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -65,12 +85,13 @@ class _ScanPageState extends State<ScanPage> {
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => FormPage()),
-              );
+              if (isValid && scooterId != null) {
+                Navigator.pushNamed(context, '/form', arguments: scooterId);
+              } else {
+                Navigator.pop(context);
+              }
             },
-            child: Text('Next'),
+            child: Text(isValid ? 'Next' : 'OK'),
           ),
         ],
       ),

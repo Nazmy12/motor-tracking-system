@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "2369258151",
+    "project_id": "gocheck-7bf05",
+    "storage_bucket": "gocheck-7bf05.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:2369258151:android:e682c67c6cc6ba864a9182",
+        "android_client_info": {
+          "package_name": "com.example.my_test_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCruwJQ6oRUKyUYG8GhhD-DbxtP1J3S2LY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

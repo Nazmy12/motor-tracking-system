@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:my_test_app/pages/home.dart'; // Import HomePage
+import 'package:gocheck/pages/home.dart';
+import 'package:gocheck/services/firestore_service.dart';
+import 'package:gocheck/providers/auth_provider.dart';
+import 'package:provider/provider.dart';
 
 class FormPage extends StatefulWidget {
   @override
@@ -11,58 +14,101 @@ class _FormPageState extends State<FormPage> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _nikController = TextEditingController();
 
-  // Variables to hold selected image file paths (if using image_picker)
-  String? _motorcycleImage;
-  String? _selfieImage;
+  String? _scooterId;
+  bool _isLoading = false;
 
-  // Method to pick image from gallery or camera
-  Future<void> _pickImage(String type) async {
-    // Logic for picking image (this can use the image_picker package)
-    setState(() {
-      if (type == 'motorcycle') {
-        _motorcycleImage = "path/to/motorcycle/image"; // Dummy path
-      } else {
-        _selfieImage = "path/to/selfie/image"; // Dummy path
-      }
-    });
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _scooterId = ModalRoute.of(context)?.settings.arguments as String?;
   }
 
   // Submit the form data
-  void _submitForm() {
-    if (_nameController.text.isEmpty || _nikController.text.isEmpty || _motorcycleImage == null || _selfieImage == null) {
-      // Show error if any field is empty
+  void _submitForm() async {
+    if (_nameController.text.trim().isEmpty || _nikController.text.trim().isEmpty) {
       showDialog(
         context: context,
         builder: (_) => AlertDialog(
-          title: Text("Error"),
-          content: Text("Please fill in all fields and upload images."),
+          title: const Text("Error"),
+          content: const Text("Please fill in all fields."),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: Text("OK"),
+              onPressed: () => Navigator.pop(context),
+              child: const Text("OK"),
             ),
           ],
         ),
       );
-    } else {
-      // Handle form submission (e.g., send data to backend)
+      return;
+    }
+
+    if (_scooterId == null) {
       showDialog(
         context: context,
         builder: (_) => AlertDialog(
-          title: Text("Form Submitted"),
-          content: Text("Your form has been submitted successfully."),
+          title: const Text("Error"),
+          content: const Text("No scooter selected."),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("OK"),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final booking = await FirestoreService().getActiveBookingForScooter(_scooterId!);
+      if (booking == null) {
+        throw Exception('No active booking found for this scooter');
+      }
+
+      await FirestoreService().updateBooking(booking.id, {
+        'status': 'Returned',
+        'returnDate': DateTime.now(),
+        'notes': 'Returned by ${_nameController.text}',
+      });
+
+      await FirestoreService().updateScooterStatus(_scooterId!, 'Available');
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text("Form Submitted"),
+          content: const Text("Your return has been submitted successfully."),
           actions: [
             TextButton(
               onPressed: () {
-                // Navigate to the HomePage after submission
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => HomePage()),
-                );
+                Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
               },
-              child: Text("Go to Home"),
+              child: const Text("Go to Home"),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text("Error"),
+          content: Text("Failed to submit: $e"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("OK"),
             ),
           ],
         ),
@@ -110,81 +156,7 @@ class _FormPageState extends State<FormPage> {
               ),
               SizedBox(height: 16),
 
-              // Motorcycle Image picker
-              GestureDetector(
-                onTap: () => _pickImage('motorcycle'),
-                child: Container(
-                  padding: EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.camera_alt, color: Colors.red),
-                      SizedBox(width: 10),
-                      Text(
-                        _motorcycleImage == null ? "Attach Motorcycle's Picture" : "Motorcycle's Picture Attached",
-                        style: TextStyle(fontSize: 16),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              SizedBox(height: 8),
 
-              // Guide note for Motorcycle Picture
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Text(
-                  "Please upload a photo of the motorcycle with the license plate clearly visible.",
-                  style: TextStyle(fontSize: 14, color: Colors.black54),
-                ),
-              ),
-              SizedBox(height: 16),
-
-              // Selfie Image picker
-              GestureDetector(
-                onTap: () => _pickImage('selfie'),
-                child: Container(
-                  padding: EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.camera_alt, color: Colors.red),
-                      SizedBox(width: 10),
-                      Text(
-                        _selfieImage == null ? "Attach Selfie" : "Selfie Attached",
-                        style: TextStyle(fontSize: 16),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              SizedBox(height: 8),
-
-              // Guide note for Selfie Picture
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Text(
-                  "Please upload a selfie with the motorcycle, making sure the surrounding environment is visible.",
-                  style: TextStyle(fontSize: 14, color: Colors.black54),
-                ),
-              ),
-              SizedBox(height: 16),
-
-              // Instruction text
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Text(
-                  "Please upload a selfie with the motorcycle, ensuring that both you and the motorcycle are clearly visible in the photo. The surrounding environment should also be included so that the location context can be verified. In addition, you are required to upload a separate photo of the motorcycle where the license plate is fully visible and easy to read. These photos will help the system confirm that the motorcycle has been returned to the correct place.",
-                  style: TextStyle(fontSize: 14, color: Colors.black54),
-                ),
-              ),
-              SizedBox(height: 16),
 
               // Submit Button
               ElevatedButton(

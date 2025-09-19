@@ -1,4 +1,4 @@
-name: my_test_app
+name: gocheck
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -33,6 +33,12 @@ dependencies:
   camera: ^0.10.0+4  # for camera access
   image_picker: ^0.8.4+4  # for picking images from the gallery or camera
   flutter_tesseract_ocr: 0.4.29  # OCR package
+  provider: ^6.0.5  # for state management
+  # Firebase dependencies for backend
+  firebase_core: ^4.1.0
+  firebase_auth: ^6.0.2
+  cloud_firestore: ^6.0.1
+  csv: ^5.0.2
   # You may want to use a QR code scanner or a license plate OCR package, depending on the exact need.
 
   # The following adds the Cupertino Icons font to your application.
@@ -57,11 +63,12 @@ dev_dependencies:
 flutter:
   assets:
       - assets/image/gocheck_logo.png
-      - assets/image/login_bg.png  
-      - assets/image/home_banner.png   
-      - assets/image/red_scooter.png   
-      - assets/image/yellow_scooter.png   
-      - assets/image/avatar.png   
+      - assets/image/login_bg.png
+      - assets/image/home_banner.png
+      - assets/image/red_scooter.png
+      - assets/image/yellow_scooter.png
+      - assets/image/avatar.png
+      - assets/sample_data/Pengguna KBM agustus 2025.csv
 
 
   # The following line ensures that the Material Icons font is

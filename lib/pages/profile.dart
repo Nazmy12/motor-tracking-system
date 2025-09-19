@@ -1,11 +1,51 @@
 import 'package:flutter/material.dart';
-import 'package:my_test_app/pages/login.dart';
+import 'package:provider/provider.dart';
+import 'package:gocheck/providers/auth_provider.dart';
+import 'package:gocheck/pages/login.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
   @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  Map<String, dynamic>? userData;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final uid = authProvider.user?.uid;
+    if (uid != null) {
+      userData = await authProvider.getUserData(uid);
+    }
+    setState(() {
+      isLoading = false;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+
+    if (isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final name = userData?['name'] ?? 'Unknown';
+    final nik = userData?['nik'] ?? 'Unknown';
+    final email = userData?['email  '] ?? 'Unknown';
+    final phone = userData?['phone'] ?? 'Unknown';
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
@@ -14,22 +54,22 @@ class ProfilePage extends StatelessWidget {
             // 🔴 Header with gradient background
             Stack(
               children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(30),
-              bottomRight: Radius.circular(30),
-            ), 
-                child: Container(
-                  height: 250,   
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Color.fromARGB(255, 245, 44, 44), Color.fromARGB(252, 255, 138, 138)],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
+                ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(30),
+                    bottomRight: Radius.circular(30),
+                  ),
+                  child: Container(
+                    height: 250,
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Color.fromARGB(255, 245, 44, 44), Color.fromARGB(252, 255, 138, 138)],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
                     ),
                   ),
                 ),
-          ),
 
                 // Top bar (back + title + logout)
                 Positioned(
@@ -61,7 +101,8 @@ class ProfilePage extends StatelessWidget {
                   top: 50,
                   right: 20,
                   child: GestureDetector(
-                    onTap: () {
+                    onTap: () async {
+                      await authProvider.logout();
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
@@ -90,18 +131,18 @@ class ProfilePage extends StatelessWidget {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            "MUHAMMAD LUKMAN ARDIANSYAH",
-                            style: TextStyle(
+                          Text(
+                            name,
+                            style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                               color: Colors.black,
                             ),
                           ),
                           const SizedBox(height: 6),
-                          const Text(
-                            "21960027",
-                            style: TextStyle(
+                          Text(
+                            nik,
+                            style: const TextStyle(
                               fontSize: 14,
                               color: Colors.black54,
                             ),
@@ -158,10 +199,10 @@ class ProfilePage extends StatelessWidget {
                       ),
                     ),
                     const Divider(),
-                    _detailField("Name", "MUHAMMAD LUKMAN ARDIANSYAH"),
-                    _detailField("NIK", "21960027"),
-                    _detailField("Email", "lukman@gmail.com"),
-                    _detailField("No. Telephone", "082113452332"),
+                    _detailField("Name", name),
+                    _detailField("NIK", nik),
+                    _detailField("Email", email),
+                    _detailField("No. Telephone", phone),
                   ],
                 ),
               ),

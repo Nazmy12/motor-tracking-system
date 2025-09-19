@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:my_test_app/pages/login.dart';
-import 'package:my_test_app/pages/borrow.dart';
-import 'package:my_test_app/pages/status.dart';
-import 'package:my_test_app/pages/profile.dart'; // ✅ Import ProfilePage
-import 'package:my_test_app/pages/scan.dart'; // ✅ Import ScanPage
+import 'package:gocheck/pages/login.dart';
+import 'package:gocheck/pages/borrow.dart';
+import 'package:gocheck/pages/status.dart';
+import 'package:gocheck/pages/profile.dart'; // ✅ Import ProfilePage
+import 'package:gocheck/pages/scan.dart'; // ✅ Import ScanPage
+import 'package:gocheck/widgets/menu_card.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -64,12 +65,7 @@ class HomePage extends StatelessWidget {
                 right: 20,
                 child: GestureDetector(
                   onTap: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const LoginPage(),
-                      ),
-                    );
+                    Navigator.pushNamed(context, '/profile');
                   },
                   child: const CircleAvatar(
                     backgroundColor: Colors.white,
@@ -129,24 +125,18 @@ class HomePage extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _menuCard(
+              MenuCard(
                 icon: Icons.pie_chart,
                 title: "Status",
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const StatusPage()),
-                  );
+                  Navigator.pushNamed(context, '/status');
                 },
               ),
-              _menuCard(
+              MenuCard(
                 icon: Icons.pedal_bike,
                 title: "Borrow",
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const BorrowPage()),
-                  );
+                  Navigator.pushNamed(context, '/borrow');
                 },
               ),
             ],
@@ -177,12 +167,7 @@ class HomePage extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.person_outline, color: Colors.grey),
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ProfilePage(),
-                    ),
-                  );
+                  Navigator.pushNamed(context, '/profile');
                 },
               ),
             ],
@@ -193,10 +178,7 @@ class HomePage extends StatelessWidget {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           // Navigate to ScanPage when the camera icon is clicked
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => ScanPage()),
-          );
+          Navigator.pushNamed(context, '/scan');
         },
         backgroundColor: Colors.redAccent,
         child: const Icon(Icons.camera_alt, color: Colors.white),
@@ -205,39 +187,7 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  // 🔹 Reusable MenuCard with onTap
-  static Widget _menuCard({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 120,
-        height: 100,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 6,
-              offset: Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Colors.redAccent, size: 40),
-            const SizedBox(height: 8),
-            Text(title, style: const TextStyle(fontSize: 16)),
-          ],
-        ),
-      ),
-    );
-  }
+
 }
 
 class SwitchExample extends StatefulWidget {
