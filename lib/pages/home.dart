@@ -29,10 +29,19 @@ class HomePage extends StatelessWidget {
                     bottomLeft: Radius.circular(30),
                     bottomRight: Radius.circular(30),
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color.fromARGB(255, 168, 168, 168),
+                      blurRadius: 5,
+                      spreadRadius: 1,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
                 child: Image.asset(
                   "assets/image/home_banner.png",
                   fit: BoxFit.cover,
+
                   width: double.infinity,
                 ),
               ),
