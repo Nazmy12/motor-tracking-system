@@ -35,10 +35,15 @@ dependencies:
   flutter_tesseract_ocr: 0.4.29  # OCR package
   provider: ^6.0.5  # for state management
   # Firebase dependencies for backend
-  firebase_core: ^4.1.0
-  firebase_auth: ^6.0.2
-  cloud_firestore: ^6.0.1
-  csv: ^5.0.2
+  firebase_core: ^4.1.1
+  firebase_auth: ^6.1.0
+  cloud_firestore: ^6.0.2
+  firebase_storage: ^13.0.2
+  geolocator: ^14.0.2
+  csv: ^6.0.0
+  uuid: ^4.2.1
+  image: ^4.5.4
+  google_ml_kit: ^0.18.0  # For AI-powered text recognition
   # You may want to use a QR code scanner or a license plate OCR package, depending on the exact need.
 
   # The following adds the Cupertino Icons font to your application.

@@ -1,10 +1,7 @@
-import 'package:flutter/material.dart';
-import 'package:gocheck/pages/login.dart';
-import 'package:gocheck/pages/borrow.dart';
-import 'package:gocheck/pages/status.dart';
-import 'package:gocheck/pages/profile.dart'; // ✅ Import ProfilePage
-import 'package:gocheck/pages/scan.dart'; // ✅ Import ScanPage
+import 'package:flutter/material.dart'; 
 import 'package:gocheck/widgets/menu_card.dart';
+import 'package:provider/provider.dart';
+import 'package:gocheck/providers/navigation_provider.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -60,19 +57,6 @@ class HomePage extends StatelessWidget {
                   ),
                 ),
               ),
-              Positioned(
-                top: 100,
-                right: 20,
-                child: GestureDetector(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/profile');
-                  },
-                  child: const CircleAvatar(
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.person, color: Colors.black),
-                  ),
-                ),
-              ),
             ],
           ),
 
@@ -95,15 +79,24 @@ class HomePage extends StatelessWidget {
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: const [
-                Row(
+              children: [
+                const Row(
                   children: [
                     Icon(Icons.navigation, color: Colors.redAccent),
                     SizedBox(width: 8),
                     Text("Navigation", style: TextStyle(fontSize: 16)),
                   ],
                 ),
-                SwitchExample(),
+                Consumer<NavigationProvider>(
+                  builder: (context, provider, child) {
+                    return Switch(
+                      value: provider.isNavigationEnabled,
+                      onChanged: provider.toggleNavigation,
+                      activeThumbColor: Colors.redAccent,
+                      activeTrackColor: Colors.red.shade200,
+                    );
+                  },
+                ),
               ],
             ),
           ),
@@ -133,7 +126,7 @@ class HomePage extends StatelessWidget {
                 },
               ),
               MenuCard(
-                icon: Icons.pedal_bike,
+                icon: Icons.motorcycle,
                 title: "Borrow",
                 onTap: () {
                   Navigator.pushNamed(context, '/borrow');
@@ -188,29 +181,4 @@ class HomePage extends StatelessWidget {
   }
 
 
-}
-
-class SwitchExample extends StatefulWidget {
-  const SwitchExample({super.key});
-
-  @override
-  State<SwitchExample> createState() => _SwitchExampleState();
-}
-
-class _SwitchExampleState extends State<SwitchExample> {
-  bool isOn = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return Switch(
-      value: isOn,
-      onChanged: (val) {
-        setState(() {
-          isOn = val;
-        });
-      },
-      activeThumbColor: Colors.redAccent,
-      activeTrackColor: Colors.red.shade200,
-    );
-  }
 }

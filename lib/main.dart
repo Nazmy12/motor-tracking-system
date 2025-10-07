@@ -3,7 +3,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:gocheck/firebase_options.dart';
 import 'package:gocheck/providers/auth_provider.dart';
-import 'package:gocheck/services/firestore_service.dart';
 import 'package:gocheck/pages/login.dart';
 import 'package:gocheck/pages/signup.dart';
 import 'package:gocheck/pages/home.dart';
@@ -13,12 +12,11 @@ import 'package:gocheck/pages/status.dart';
 import 'package:gocheck/pages/profile.dart';
 import 'package:gocheck/pages/scan.dart';
 import 'package:gocheck/pages/form.dart';
+import 'package:gocheck/providers/navigation_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  // Populate sample data if needed
-  await FirestoreService().populateSampleData();
   runApp(const MyApp());
 }
 
@@ -30,6 +28,7 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => NavigationProvider()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

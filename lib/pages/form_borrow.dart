@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:gocheck/pages/home.dart';
 import 'package:gocheck/services/firestore_service.dart';
-import 'package:gocheck/models/booking.dart';
+import 'package:gocheck/models/borrow_request.dart';
+import 'package:gocheck/models/user.dart';
 import 'package:gocheck/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:uuid/uuid.dart';
 
 class FormBorrowPage extends StatefulWidget {
   const FormBorrowPage({super.key});
@@ -17,6 +18,14 @@ class _FormBorrowPageState extends State<FormBorrowPage> {
   final TextEditingController _nikController = TextEditingController();
   bool _isLoading = false;
   String? scooterId;
+  User? _fetchedUser;
+  bool _isLoadingUser = true;
+  
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData();
+  }
 
   @override
   void didChangeDependencies() {
@@ -24,24 +33,24 @@ class _FormBorrowPageState extends State<FormBorrowPage> {
     scooterId = ModalRoute.of(context)?.settings.arguments as String?;
   }
 
-  void _submitForm() async {
-    if (_nameController.text.trim().isEmpty || _nikController.text.trim().isEmpty) {
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text("Error"),
-          content: const Text("Please fill in all fields."),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("OK"),
-            ),
-          ],
-        ),
-      );
-      return;
+  void _fetchUserData() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final authUser = authProvider.user;
+    if (authUser?.email != null) {
+      _fetchedUser = await FirestoreService().getUserByEmail(authUser!.email!);
+      if (_fetchedUser != null) {
+        setState(() {
+          _nameController.text = _fetchedUser!.name;
+          _nikController.text = _fetchedUser!.id;
+        });
+      }
     }
+    setState(() {
+      _isLoadingUser = false;
+    });
+  }
 
+  void _submitForm() async {
     setState(() {
       _isLoading = true;
     });
@@ -58,6 +67,26 @@ class _FormBorrowPageState extends State<FormBorrowPage> {
         builder: (_) => AlertDialog(
           title: const Text("Error"),
           content: const Text("User not logged in."),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("OK"),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    if (_fetchedUser == null) {
+      setState(() {
+        _isLoading = false;
+      });
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text("Error"),
+          content: const Text("User data not found."),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -90,16 +119,19 @@ class _FormBorrowPageState extends State<FormBorrowPage> {
     }
 
     try {
-      final booking = Booking(
-        id: DateTime.now().toString(),
-        userId: user.uid,
-        scooterId: scooterId!,
-        borrowDate: DateTime.now(),
-        status: 'Active',
+      final borrowRequest = BorrowRequest(
+        borrowRequestID: const Uuid().v4(),
+        userID: _fetchedUser!.id,
+        motorcycleID: scooterId!,
+        borrowTimestamp: DateTime.now(),
+        nic: _fetchedUser!.id,
+        name: _fetchedUser!.name,
+        status: 'active',
+        notes: '',
       );
 
-      await FirestoreService().createBooking(booking);
-      await FirestoreService().updateScooterStatus(scooterId!, 'In Use');
+      await FirestoreService().createBorrowRequest(borrowRequest);
+      await FirestoreService().updateMotorcycleStatus(scooterId!, 'in use', 'not returned');
 
       setState(() {
         _isLoading = false;
@@ -142,6 +174,18 @@ class _FormBorrowPageState extends State<FormBorrowPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoadingUser) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text("Motorcycle Borrow Form"),
+          backgroundColor: Colors.redAccent,
+        ),
+        body: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Motorcycle Borrow Form"),
@@ -165,7 +209,7 @@ class _FormBorrowPageState extends State<FormBorrowPage> {
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        "Please enter your name below if you are not the owner of this motorcycle. This information is needed for verification and to avoid future problems.",
+                        "Your details are auto-filled from your account. This information is needed for verification and to avoid future problems.",
                         style: TextStyle(fontSize: 14, color: Colors.black54),
                       ),
                     ),
@@ -174,12 +218,13 @@ class _FormBorrowPageState extends State<FormBorrowPage> {
               ),
               const SizedBox(height: 16),
               const Text(
-                "Please enter your details to borrow the motorcycle.",
+                "Please review your details to borrow the motorcycle.",
                 style: TextStyle(fontSize: 16),
               ),
               const SizedBox(height: 20),
               TextField(
                 controller: _nameController,
+                readOnly: true,
                 decoration: InputDecoration(
                   labelText: "Name",
                   prefixIcon: const Icon(Icons.person),
@@ -189,6 +234,7 @@ class _FormBorrowPageState extends State<FormBorrowPage> {
               const SizedBox(height: 16),
               TextField(
                 controller: _nikController,
+                readOnly: true,
                 decoration: InputDecoration(
                   labelText: "NIK",
                   prefixIcon: const Icon(Icons.badge),

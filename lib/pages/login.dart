@@ -15,21 +15,6 @@ class _LoginPageState extends State<LoginPage> {
   bool _obscurePassword = true;
   bool _isLoading = false;
 
-  @override
-  void initState() {
-    super.initState();
-    // Check if the user is already logged in when the page is loaded
-    _checkUserAuthentication();
-  }
-
-  // Function to check if the user is already logged in
-  void _checkUserAuthentication() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    if (authProvider.user != null) {
-      // If the user is already logged in, navigate to home
-      Navigator.pushReplacementNamed(context, '/home');
-    }
-  }
 
   @override
   Widget build(BuildContext context) {

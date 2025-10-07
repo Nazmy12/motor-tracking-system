@@ -9,7 +9,6 @@ class AuthProvider with ChangeNotifier {
 
   auth.User? get user => _user;
   bool get isLoggedIn => _user != null;
-  
 
   AuthProvider() {
     _auth.authStateChanges().listen((auth.User? user) {
@@ -18,27 +17,6 @@ class AuthProvider with ChangeNotifier {
     });
   }
 
-  Future<String?> signUp(String email, String password, {String? name, String? phone}) async {
-    try {
-      auth.UserCredential result = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      // Create user in Firestore
-      if (result.user != null) {
-        model.User newUser = model.User(
-          id: result.user!.uid,
-          name: name ?? '',
-          email: email,
-          phone: phone ?? '',
-        );
-        await FirestoreService().createUser(newUser);
-      }
-      return null; // Success
-    } on auth.FirebaseAuthException catch (e) {
-      return e.message;
-    }
-  }
 
   Future<String?> signIn(String email, String password) async {
     try {
@@ -60,8 +38,42 @@ class AuthProvider with ChangeNotifier {
     await signOut();
   }
 
-  Future<Map<String, dynamic>?> getUserData(String uid) async {
-    final user = await FirestoreService().getUser(uid);
-    return user?.toJson();
+
+  Future<void> updateUserData(String uid, Map<String, dynamic> data) async {
+    await FirestoreService().updateUser(uid, data);
+  }
+
+  Future<String?> signUp(
+    String email,
+    String password, {
+    required String name,
+    required String phone,
+    required String nik,
+    required String position,
+  }) async {
+    try {
+      // Create Firebase Auth user
+      auth.UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      // Create user document in Firestore using NIK as document ID
+      final user = model.User(
+        id: nik, // Use NIK as document ID
+        name: name,
+        position: position,
+        email: email,
+        phone: phone,
+      );
+
+      await FirestoreService().createUser(user);
+
+      return null; // Success
+    } on auth.FirebaseAuthException catch (e) {
+      return e.message;
+    } catch (e) {
+      return 'An error occurred during signup';
+    }
   }
 }

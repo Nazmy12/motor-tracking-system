@@ -1,44 +1,92 @@
 import 'package:flutter/material.dart';
+import 'package:gocheck/services/firestore_service.dart';
+import 'package:gocheck/models/motorcycle.dart';
+import 'package:gocheck/models/user.dart';
 
-class StatusPage extends StatelessWidget {
+class StatusPage extends StatefulWidget {
   const StatusPage({super.key});
 
-  final List<Map<String, String>> data = const [
-    {"serial": "B3337PJV", "user": "MUHAMMAD LUKMAN ARDIANSYAH", "position": "Teknisi BGES Services"},
-    {"serial": "B3434PJV", "user": "CHOIRUL RACHMAN", "position": "Teknisi BGES Services"},
-    {"serial": "B3011PLJ", "user": "YADID TAQWA MIFTAQUL HUDA", "position": "Teknisi BGES Services"},
-    {"serial": "B3017PLK", "user": "M ERWIN KURNIAWAN", "position": "Teknisi BGES Services"},
-    {"serial": "B3087PLK", "user": "AGUNG DWI SETYAWAN", "position": "Teknisi BGES Services"},
-    {"serial": "B3148PLL", "user": "RADITYA INDRAKA H", "position": "Teknisi BGES Services"},
-    {"serial": "B3156PLK", "user": "NANANG PURWANTO", "position": "Teknisi BGES Services"},
-    {"serial": "B3028PLL", "user": "TITO DWI MAULUDDI", "position": "Teknisi B2C Batu"},
-    {"serial": "B3233PLL", "user": "MUHAMMAD RIZQI ADHINEGORO", "position": "Teknisi B2C Batu"},
-    {"serial": "B3297PLL", "user": "AMIR MUJAHID ABDULLAH", "position": "Teknisi B2C Batu"},
-    {"serial": "B3348PLH", "user": "HUSNUL KHULUQ", "position": "Teknisi B2C Batu"},
-    {"serial": "B3600PLJ", "user": "INDRA RIDWAN RATU OPENG", "position": "Teknisi B2C Batu"},
-    {"serial": "B3784PLJ", "user": "MOCHAMAD RIZKI BAHTIAR", "position": "Teknisi B2C Batu"},
-    {"serial": "B3788PLJ", "user": "MOCH. FAJAR ZAMRONI", "position": "Teknisi B2C Batu"},
-    {"serial": "B3933PLK", "user": "EDO ERIYANTO", "position": "Teknisi B2C Batu"},
-    {"serial": "B3236PLJ", "user": "RIZQI RACHMANSYAH", "position": "Teknisi B2C Kepanjen"},
-    {"serial": "B3668PLJ", "user": "TAUFIQUR ROHMAN", "position": "Teknisi B2C Kepanjen"},
-    {"serial": "B3930PLK", "user": "NOVAL AFFISSENA SHOLIHAN", "position": "Teknisi B2C Kepanjen"},
-    {"serial": "B3939PLK", "user": "ILHAM BAGAS PRAYUDA", "position": "Teknisi B2C Kepanjen"},
-    {"serial": "NOPOL-B3553PIE", "user": "ALI ROMADHONI", "position": "Teknisi B2C Malang"},
-    {"serial": "B3172PLL", "user": "MOHAMMAD AMIRUL KHAKIM HADI KUSUMA", "position": "Teknisi B2C Malang"},
-    {"serial": "B3231PLK", "user": "M RIDHO BAGUS KURNIAWAN", "position": "Teknisi B2C Malang"},
-    {"serial": "B3231PLL", "user": "AHMAD FARIS SYAHRUDIN", "position": "Teknisi B2C Malang"},
-    {"serial": "B3248PLK", "user": "ICHWANUL KIROM", "position": "Teknisi B2C Malang"},
-    {"serial": "B3249PLK", "user": "MOCH LUKMAN FAUZI", "position": "Teknisi B2C Malang"},
-    {"serial": "B3407PLJ", "user": "HERMANSYAH", "position": "Teknisi B2C Malang"},
-    {"serial": "B3782PLJ", "user": "HENDRA ANDIKA SAPUTRA", "position": "Teknisi B2C Malang"},
-    {"serial": "B3786PLJ", "user": "FADHLUL ILAH", "position": "Teknisi B2C Malang"},
-    {"serial": "B3794PLJ", "user": "RIZKI ABDULLOH AL AMIN", "position": "Teknisi B2C Malang"},
-  ];
+  @override
+  State<StatusPage> createState() => _StatusPageState();
+}
+
+class _StatusPageState extends State<StatusPage> {
+  final FirestoreService _firestoreService = FirestoreService();
+  List<MotorcycleStatus> _motorcycleData = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMotorcycleData();
+  }
+
+  Future<void> _loadMotorcycleData() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+
+      // Fetch motorcycles for all locations
+      List<String> locations = [
+        'Malang',
+        'Batu',
+        'Kepanjen',
+        'BGES',
+        'Provisioning',
+        'Maintenance',
+        'Turen',
+        'Singosari',
+        'FTM',
+        'MO SBPU',
+        'TSEL',
+        'Wifi',
+        'Patroli',
+        'Wilsus',
+        'OLO',
+        'Blimbing',
+        'NE',
+      ];
+      List<MotorcycleStatus> allData = [];
+
+      for (String location in locations) {
+        List<Motorcycle> motorcycles = await _firestoreService
+            .getMotorcyclesByLocation(location);
+
+        for (Motorcycle motorcycle in motorcycles) {
+          // Get user name using ownerID
+          User? user = await _firestoreService.getUser(motorcycle.ownerID);
+          String userName = user?.name ?? 'Unknown User';
+
+          allData.add(
+            MotorcycleStatus(
+              serialNumber: motorcycle.serialNumber,
+              userName: userName,
+              location: motorcycle.location,
+              returnStatus: motorcycle.returnStatus,
+            ),
+          );
+        }
+      }
+
+      setState(() {
+        _motorcycleData = allData;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Failed to load data: $e';
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3, // Malang, Batu, Kepanjen
+      length: 17, // length of the all location
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
@@ -62,34 +110,87 @@ class StatusPage extends StatelessWidget {
             labelColor: Colors.redAccent,
             unselectedLabelColor: Colors.grey,
             indicatorColor: Colors.redAccent,
+            isScrollable: true,
             tabs: [
               Tab(text: "Malang"),
               Tab(text: "Batu"),
               Tab(text: "Kepanjen"),
+              Tab(text: "BGES"),
+              Tab(text: "Provisioning"),
+              Tab(text: "Maintenance"),
+              Tab(text: "Turen"),
+              Tab(text: "Singosari"),
+              Tab(text: "FTM"),
+              Tab(text: "MO SBPU"),
+              Tab(text: "TSEL"),
+              Tab(text: "Wifi"),
+              Tab(text: "Patroli"),
+              Tab(text: "Wilsus"),
+              Tab(text: "OLO"),
+              Tab(text: "Blimbing"),
+              Tab(text: "NE"),
             ],
           ),
         ),
-        body: TabBarView(
-          children: [
-            StatusList(positionFilter: "Teknisi B2C Malang", data: data),
-            StatusList(positionFilter: "Teknisi B2C Batu", data: data),
-            StatusList(positionFilter: "Teknisi B2C Kepanjen", data: data),
-          ],
-        ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+            ? Center(child: Text(_error!))
+            : TabBarView(
+                children: [
+                  StatusList(locationFilter: "Malang", data: _motorcycleData),
+                  StatusList(locationFilter: "Batu", data: _motorcycleData),
+                  StatusList(locationFilter: "Kepanjen", data: _motorcycleData),
+                  StatusList(locationFilter: "BGES", data: _motorcycleData),
+                  StatusList(locationFilter: "Provisioning", data: _motorcycleData),
+                  StatusList(locationFilter: "Maintenance", data: _motorcycleData),
+                  StatusList(locationFilter: "Turen", data: _motorcycleData),
+                  StatusList(locationFilter: "Singosari", data: _motorcycleData),
+                  StatusList(locationFilter: "FTM", data: _motorcycleData),
+                  StatusList(locationFilter: "MO SBPU", data: _motorcycleData),
+                  StatusList(locationFilter: "TSEL", data: _motorcycleData),
+                  StatusList(locationFilter: "Wifi", data: _motorcycleData),
+                  StatusList(locationFilter: "Patroli", data: _motorcycleData),
+                  StatusList(locationFilter: "Wilsus", data: _motorcycleData),
+                  StatusList(locationFilter: "OLO", data: _motorcycleData),
+                  StatusList(locationFilter: "Blimbing", data: _motorcycleData),
+                  StatusList(locationFilter: "NE", data: _motorcycleData),
+                ],
+              ),
       ),
     );
   }
 }
 
-class StatusList extends StatelessWidget {
-  final String positionFilter;
-  final List<Map<String, String>> data;
+class MotorcycleStatus {
+  final String serialNumber;
+  final String userName;
+  final String location;
+  final String returnStatus;
 
-  const StatusList({super.key, required this.positionFilter, required this.data});
+  MotorcycleStatus({
+    required this.serialNumber,
+    required this.userName,
+    required this.location,
+    required this.returnStatus,
+  });
+}
+
+class StatusList extends StatelessWidget {
+  final String locationFilter;
+  final List<MotorcycleStatus> data;
+
+  const StatusList({
+    super.key,
+    required this.locationFilter,
+    required this.data,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final filteredData = data.where((item) => item["position"] == positionFilter).toList();
+    final filteredData = data
+        .where((item) => item.location == locationFilter)
+        .toList();
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -113,32 +214,66 @@ class StatusList extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: const [
-                  SizedBox(width: 80, child: Text("Serial", style: TextStyle(fontWeight: FontWeight.bold))),
-                  Expanded(child: Text("User", style: TextStyle(fontWeight: FontWeight.bold))),
-                  SizedBox(width: 100, child: Text("Status", style: TextStyle(fontWeight: FontWeight.bold))),
+                  SizedBox(
+                    width: 80,
+                    child: Text(
+                      "Serial",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      "User",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 100,
+                    child: Text(
+                      "Status",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
                 ],
               ),
               const Divider(),
 
               // Rows
               ...filteredData.map((item) {
+                Color statusColor = item.returnStatus == 'returned'
+                    ? Colors.green
+                    : Colors.red;
+                Color backgroundColor = item.returnStatus == 'returned'
+                    ? Colors.green.shade100
+                    : Colors.red.shade100;
+
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 6),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      SizedBox(width: 80, child: Text(item["serial"] ?? "")),
-                      Expanded(child: Text(item["user"] ?? "", overflow: TextOverflow.ellipsis)),
+                      SizedBox(width: 80, child: Text(item.serialNumber)),
+                      Expanded(
+                        child: Text(
+                          item.userName,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
-                          color: Colors.red.shade100,
+                          color: backgroundColor,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Text(
-                          "Not Returned",
+                        child: Text(
+                          item.returnStatus == 'returned'
+                              ? 'Returned'
+                              : 'Not Returned',
                           style: TextStyle(
-                            color: Colors.red,
+                            color: statusColor,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

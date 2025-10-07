@@ -1,40 +1,117 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:gocheck/services/firestore_service.dart';
 import 'package:gocheck/providers/auth_provider.dart';
 import 'package:gocheck/pages/login.dart';
 
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+  final String? userId;
+
+  const ProfilePage({super.key, this.userId});
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  final FirestoreService _firestoreService = FirestoreService();
   Map<String, dynamic>? userData;
   bool isLoading = true;
+  bool isEditing = false;
+
+  // Controllers for editing
+  late TextEditingController nameController;
+  late TextEditingController idController;
+  late TextEditingController emailController;
+  late TextEditingController phoneController;
 
   @override
   void initState() {
     super.initState();
+    _initializeControllers();
     _loadUserData();
   }
 
+  void _initializeControllers() {
+    nameController = TextEditingController();
+    idController = TextEditingController();
+    emailController = TextEditingController();
+    phoneController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    idController.dispose();
+    emailController.dispose();
+    phoneController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadUserData() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final uid = authProvider.user?.uid;
-    if (uid != null) {
-      userData = await authProvider.getUserData(uid);
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final email = authProvider.user?.email;
+
+      if (email != null) {
+        final user = await _firestoreService.getUserByEmail(email);
+        if (user != null) {
+          setState(() {
+            userData = user.toJson();
+            nameController.text = user.name;
+            idController.text = user.id;
+            emailController.text = user.email ?? '';
+            phoneController.text = user.phone ?? '';
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading user data: $e');
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
     }
-    setState(() {
-      isLoading = false;
-    });
+  }
+
+  Future<void> _saveUserData() async {
+    try {
+      setState(() {
+        isLoading = true;
+      });
+
+      final updatedData = {
+        'name': nameController.text.trim(),
+        'phone': phoneController.text.trim().isEmpty ? null : phoneController.text.trim(),
+      };
+
+      // Use NIK as the document ID for updating
+      await _firestoreService.updateUser(idController.text.trim(), updatedData);
+
+      // Reload user data after update
+      await _loadUserData();
+
+      setState(() {
+        isEditing = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile updated successfully')),
+      );
+    } catch (e) {
+      print('Error saving user data: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to update profile')),
+      );
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-
     if (isLoading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
@@ -42,8 +119,8 @@ class _ProfilePageState extends State<ProfilePage> {
     }
 
     final name = userData?['name'] ?? 'Unknown';
-    final nik = userData?['nik'] ?? 'Unknown';
-    final email = userData?['email  '] ?? 'Unknown';
+    final id = userData?['id'] ?? 'Unknown';
+    final email = userData?['email'] ?? 'Unknown';
     final phone = userData?['phone'] ?? 'Unknown';
 
     return Scaffold(
@@ -101,8 +178,8 @@ class _ProfilePageState extends State<ProfilePage> {
                   top: 50,
                   right: 20,
                   child: GestureDetector(
-                    onTap: () async {
-                      await authProvider.logout();
+                    onTap: () {
+                      // Navigate back to login page
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
@@ -123,25 +200,21 @@ class _ProfilePageState extends State<ProfilePage> {
                   left: 10,
                   child: Row(
                     children: [
-                      const CircleAvatar(
-                        radius: 40,
-                        backgroundImage: AssetImage("assets/image/avatar.png"),
-                      ),
                       const SizedBox(width: 16),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            name,
+                            isEditing ? nameController.text : name,
                             style: const TextStyle(
-                              fontSize: 12,
+                              fontSize: 20,
                               fontWeight: FontWeight.bold,
                               color: Colors.black,
                             ),
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            nik,
+                            id,
                             style: const TextStyle(
                               fontSize: 14,
                               color: Colors.black54,
@@ -151,9 +224,17 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       const SizedBox(width: 12),
                       ElevatedButton.icon(
-                        onPressed: () {},
-                        icon: const Icon(Icons.edit, size: 16),
-                        label: const Text("Edit"),
+                        onPressed: () {
+                          if (isEditing) {
+                            _saveUserData();
+                          } else {
+                            setState(() {
+                              isEditing = true;
+                            });
+                          }
+                        },
+                        icon: Icon(isEditing ? Icons.save : Icons.edit, size: 16),
+                        label: Text(isEditing ? "Save" : "Edit"),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
                           foregroundColor: Colors.orange,
@@ -191,18 +272,44 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      "Details",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Details",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (isEditing)
+                          TextButton(
+                            onPressed: () {
+                              setState(() {
+                                isEditing = false;
+                                // Reset controllers to original values
+                                nameController.text = name;
+                                idController.text = id;
+                                emailController.text = email;
+                                phoneController.text = phone;
+                              });
+                            },
+                            child: const Text("Cancel"),
+                          ),
+                      ],
                     ),
                     const Divider(),
-                    _detailField("Name", name),
-                    _detailField("NIK", nik),
-                    _detailField("Email", email),
-                    _detailField("No. Telephone", phone),
+                    if (isEditing) ...[
+                      _editableField("Name", nameController),
+                      _detailField("NIK", id),
+                      _detailField("Email", email),
+                      _editableField("No. Telephone", phoneController),
+                    ] else ...[
+                      _detailField("Name", name),
+                      _detailField("NIK", id),
+                      _detailField("Email", email),
+                      _detailField("No. Telephone", phone),
+                    ],
                   ],
                 ),
               ),
@@ -237,6 +344,36 @@ class _ProfilePageState extends State<ProfilePage> {
               ],
             ),
             child: Text(value),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 🔹 Editable field widget
+  Widget _editableField(String label, TextEditingController controller) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.orange, width: 1),
+            ),
+            child: TextField(
+              controller: controller,
+              decoration: InputDecoration(
+                contentPadding: const EdgeInsets.all(10),
+                border: InputBorder.none,
+                hintText: 'Enter $label',
+              ),
+            ),
           ),
         ],
       ),

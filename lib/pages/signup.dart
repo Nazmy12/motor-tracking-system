@@ -14,8 +14,42 @@ class _SignUpPageState extends State<SignUpPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _nikController = TextEditingController();
+  String _selectedPosition = 'Teknisi B2C Malang'; // Default position
   bool _obscurePassword = true;
   bool _isLoading = false;
+
+  // Position options
+  final List<String> _positions = [
+    'Head Of Service Area Klojen',
+    'Korlap B2C Batu',
+    'Korlap B2C Blimbing',
+    'Korlap B2C Turen',
+    'Officer 3 Assurance & Maintenance Malang',
+    'Team Leader Assurance & Maintenance B2B Malang',
+    'Team Leader Provisioning & Migration B2B Malang',
+    'Technician On Site',
+    'Teknisi B2C Batu',
+    'Teknisi B2C Kepanjen',
+    'Teknisi B2C Malang',
+    'Teknisi B2C Singosari',
+    'Teknisi B2C Turen',
+    'Teknisi BGES Services',
+    'Teknisi Corrective Maintenance & QE',
+    'Teknisi FTM',
+    'Teknisi Maintenance FO Lambda',
+    'Teknisi MO SPBU',
+    'Teknisi MS TIS',
+    'Teknisi NE',
+    'Teknisi OLO',
+    'Teknisi Patroli Aset',
+    'Teknisi Provisioning & Migrasi',
+    'Teknisi Provisioning BGES',
+    'Teknisi Provisioning WIBS',
+    'Teknisi TSEL',
+    'Teknisi Wifi',
+    'Teknisi Wilsus',
+  ];
 
   @override
   void dispose() {
@@ -23,6 +57,7 @@ class _SignUpPageState extends State<SignUpPage> {
     _emailController.dispose();
     _passwordController.dispose();
     _phoneController.dispose();
+    _nikController.dispose();
     super.dispose();
   }
 
@@ -35,7 +70,7 @@ class _SignUpPageState extends State<SignUpPage> {
           Container(
             alignment: Alignment.topCenter,
             child: Image.asset(
-              "assets/image/login_bg.png", // Assuming you have a background image.
+              "assets/image/login_bg.png", // background image.
               fit: BoxFit.cover,
               height: MediaQuery.of(context).size.height,
               width: double.infinity,
@@ -46,15 +81,12 @@ class _SignUpPageState extends State<SignUpPage> {
           SingleChildScrollView(
             child: Column(
               children: [
-                const SizedBox(height: 120),
+                const SizedBox(height: 100),
 
                 // Logo + Name
                 Column(
                   children: [
-                    Image.asset(
-                      "assets/image/gocheck_logo.png", // Assuming you have a logo image.
-                      height: 100,
-                    ),
+                    Image.asset("assets/image/gocheck_logo.png", height: 100),
                     const SizedBox(height: 10),
                     const Text(
                       "GoCheck",
@@ -67,7 +99,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   ],
                 ),
 
-                const SizedBox(height: 120),
+                const SizedBox(height: 110),
 
                 // Sign-up form
                 Padding(
@@ -137,6 +169,51 @@ class _SignUpPageState extends State<SignUpPage> {
                           ),
                         ),
                       ),
+                      const SizedBox(height: 20),
+
+                      // NIK
+                      TextField(
+                        controller: _nikController,
+                        decoration: InputDecoration(
+                          prefixIcon: const Icon(Icons.email_outlined),
+                          labelText: "NIK",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Position Dropdown
+                      DropdownButtonFormField<String>(
+                        value: _selectedPosition,
+                        isExpanded: true,
+                        decoration: InputDecoration(
+                          prefixIcon: const Icon(Icons.work_outline),
+                          labelText: "Position",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                        ),
+                        items: _positions.map((String position) {
+                          return DropdownMenuItem<String>(
+                            value: position,
+                            child: Text(
+                              position,
+                              style: const TextStyle(fontSize: 14),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            _selectedPosition = newValue!;
+                          });
+                        },
+                      ),
                       const SizedBox(height: 30),
 
                       // Sign-up button
@@ -149,63 +226,87 @@ class _SignUpPageState extends State<SignUpPage> {
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           minimumSize: const Size(double.infinity, 50),
                         ),
-                        onPressed: _isLoading ? null : () async {
-                          // Validation
-                          if (_fullNameController.text.trim().isEmpty ||
-                              _emailController.text.trim().isEmpty ||
-                              _passwordController.text.trim().isEmpty ||
-                              _phoneController.text.trim().isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Please fill in all fields')),
-                            );
-                            return;
-                          }
-                          if (!_emailController.text.contains('@')) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Please enter a valid email')),
-                            );
-                            return;
-                          }
-                          if (_passwordController.text.length < 6) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Password must be at least 6 characters')),
-                            );
-                            return;
-                          }
+                        onPressed: _isLoading
+                            ? null
+                            : () async {
+                                // Validation
+                                if (_fullNameController.text.trim().isEmpty ||
+                                    _emailController.text.trim().isEmpty ||
+                                    _passwordController.text.trim().isEmpty ||
+                                    _phoneController.text.trim().isEmpty ||
+                                    _nikController.text.trim().isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Please fill in all fields',
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                if (!_emailController.text.contains('@')) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Please enter a valid email',
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                if (_passwordController.text.length < 8) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Password must be at least 8 characters',
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
 
-                          setState(() {
-                            _isLoading = true;
-                          });
-                          final authProvider = Provider.of<AuthProvider>(context, listen: false);
-                          String? error = await authProvider.signUp(
-                            _emailController.text.trim(),
-                            _passwordController.text.trim(),
-                            name: _fullNameController.text.trim(),
-                            phone: _phoneController.text.trim(),
-                          );
-                          setState(() {
-                            _isLoading = false;
-                          });
-                          if (error == null) {
-                            Navigator.pushReplacementNamed(context, '/login');
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(error)),
-                            );
-                          }
-                        },
+                                setState(() {
+                                  _isLoading = true;
+                                });
+                                final authProvider = Provider.of<AuthProvider>(
+                                  context,
+                                  listen: false,
+                                );
+                                String? error = await authProvider.signUp(
+                                  _emailController.text.trim(),
+                                  _passwordController.text.trim(),
+                                  name: _fullNameController.text
+                                      .trim()
+                                      .toUpperCase(),
+                                  phone: _phoneController.text.trim(),
+                                  nik: _nikController.text.trim(),
+                                  position: _selectedPosition,
+                                );
+                                setState(() {
+                                  _isLoading = false;
+                                });
+                                if (error == null) {
+                                  Navigator.pushReplacementNamed(
+                                    context,
+                                    '/login',
+                                  );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(error)),
+                                  );
+                                }
+                              },
                         child: _isLoading
-                            ? const CircularProgressIndicator(color: Colors.white)
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
                             : const Text(
                                 "Sign Up",
-                                style: TextStyle(fontSize: 18, color: Colors.white),
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.white,
+                                ),
                               ),
-                      ),
-
-                      const SizedBox(height: 12),
-                      TextButton(
-                        onPressed: () {},
-                        child: const Text("Forgot password?"),
                       ),
 
                       Row(
